@@ -16,6 +16,8 @@ let roomId = null;
 let player = null;
 let selectedPiece = null;
 
+const coordMap = [50, 150, 250, 300, 350, 450, 550];
+
 const boardLayout = [
     [0, 3, 6], [1, 3, 5], [2, 3, 4],
     [0, 3, 0], [1, 3, 1], [2, 3, 2],
@@ -79,8 +81,8 @@ function drawBoard() {
     positions.forEach((pos, i) => {
         const point = document.createElement('div');
         point.classList.add('point');
-        point.style.left = `${50 + pos.x * (500 / 6)}px`;
-        point.style.top = `${50 + pos.y * (500 / 6)}px`;
+        point.style.left = `${coordMap[pos.x]}px`;
+        point.style.top = `${coordMap[pos.y]}px`;
         point.dataset.x = pos.x;
         point.dataset.y = pos.y;
         point.dataset.index = i;
@@ -98,8 +100,8 @@ function updateBoard(board) {
                 piece.classList.add('piece', cell);
                 const pos = positions.find(p => p.x === x && p.y === y);
                 if (pos) {
-                    piece.style.left = `${50 + pos.x * (500 / 6)}px`;
-                    piece.style.top = `${50 + pos.y * (500 / 6)}px`;
+                    piece.style.left = `${coordMap[pos.x]}px`;
+                    piece.style.top = `${coordMap[pos.y]}px`;
                     piece.dataset.x = x;
                     piece.dataset.y = y;
                     piece.addEventListener('click', handlePieceClick);
