@@ -23,6 +23,17 @@ const turnSwitchSound = document.getElementById('turn-switch-sound');
 const chatForm = document.getElementById('chat-form');
 const chatInput = document.getElementById('chat-input');
 const chatMessages = document.getElementById('chat-messages');
+const emojiBtn = document.getElementById('emoji-btn');
+
+const picker = new EmojiButton();
+
+picker.on('emoji', emoji => {
+    chatInput.value += emoji;
+});
+
+emojiBtn.addEventListener('click', () => {
+    picker.togglePicker(emojiBtn);
+});
 
 let player = null;
 let selectedPiece = null;
@@ -189,6 +200,9 @@ chatForm.addEventListener('submit', (e) => {
 
 socket.on('newMessage', (data) => {
     const { senderId, senderName, text } = data;
+    
+    const wasScrolledToBottom = chatMessages.scrollHeight - chatMessages.clientHeight <= chatMessages.scrollTop + 1;
+
     const messageElement = document.createElement('div');
     messageElement.classList.add('message');
     
@@ -209,7 +223,10 @@ socket.on('newMessage', (data) => {
     }
     
     chatMessages.appendChild(messageElement);
-    chatMessages.scrollTop = chatMessages.scrollHeight;
+
+    if (wasScrolledToBottom) {
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
 });
 
 socket.on('waitingForOpponent', () => {

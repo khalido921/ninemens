@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Nine Men's Morris</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.4/dist/index.min.js"></script>
 </head>
 <body>
     <div id="notification-container"></div>
@@ -20,7 +21,10 @@
                 <h2>Chat</h2>
                 <div id="chat-messages"></div>
                 <form id="chat-form">
-                    <input id="chat-input" placeholder="Type a message..." autocomplete="off" />
+                    <div class="chat-input-container">
+                        <input id="chat-input" placeholder="Type a message..." autocomplete="off" />
+                        <button type="button" id="emoji-btn">😊</button>
+                    </div>
                     <button type="submit">Send</button>
                 </form>
             </div>

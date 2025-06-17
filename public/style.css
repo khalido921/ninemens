@@ -122,15 +122,33 @@ h1 {
 
 #chat-form {
     display: flex;
-    gap: 8px;
+    margin-top: 10px;
 }
 
-#chat-form input {
+#chat-input {
     flex-grow: 1;
-    padding: 8px 12px;
-    border-radius: 6px;
-    border: 1px solid #bbb;
+    border: 1px solid #ccc;
+    padding: 8px;
+    border-radius: 4px;
     font-size: 1rem;
+}
+
+.chat-input-container {
+    display: flex;
+    flex-grow: 1;
+    margin-right: 5px;
+}
+
+#emoji-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 5px;
+}
+
+#chat-form button[type="submit"] {
+    background-color: #007bff;
 }
 
 #chat-form button {
