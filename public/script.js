@@ -1,18 +1,24 @@
 const socket = io();
 
-const roomIdInput = document.getElementById('room-id');
-const createRoomBtn = document.getElementById('create-room');
-const joinRoomBtn = document.getElementById('join-room');
+const playButton = document.getElementById('play-button');
 const roomSelection = document.getElementById('room-selection');
 const gameContainer = document.getElementById('game-container');
+const turnSpan = document.getElementById('turn');
 const displayRoomId = document.getElementById('display-room-id');
 const playerIdSpan = document.getElementById('player-id');
-const turnSpan = document.getElementById('turn');
 const phaseSpan = document.getElementById('phase');
 const piecesToPlaceSpan = document.getElementById('pieces-to-place');
 const boardDiv = document.getElementById('board');
+const playerBadge = document.getElementById('player-badge');
+const playerNameInput = document.getElementById('player-name');
+const playerNamesDiv = document.getElementById('player-names');
+const notificationContainer = document.getElementById('notification-container');
+const waitingMessage = document.getElementById('waiting-message');
+const moveSound = document.getElementById('move-sound');
+const removeSound = document.getElementById('remove-sound');
+const millSound = document.getElementById('mill-sound');
+const turnSwitchSound = document.getElementById('turn-switch-sound');
 
-let roomId = null;
 let player = null;
 let selectedPiece = null;
 
@@ -35,7 +41,9 @@ const positions = [
     { x: 0, y: 6 }, { x: 3, y: 6 }, { x: 6, y: 6 }
 ];
 
-function drawBoard() {
+const playerNameSidebar = document.createElement('div');
+
+function drawBoard(board) {
     boardDiv.innerHTML = '';
     const boardSize = 600;
     const lines = [
@@ -79,36 +87,35 @@ function drawBoard() {
     boardDiv.appendChild(svg);
     
     positions.forEach((pos, i) => {
+        const isFilled = board && board[pos.x] && board[pos.x][pos.y];
         const point = document.createElement('div');
         point.classList.add('point');
+        if (isFilled) point.classList.add('filled');
         point.style.left = `${coordMap[pos.x]}px`;
         point.style.top = `${coordMap[pos.y]}px`;
         point.dataset.x = pos.x;
         point.dataset.y = pos.y;
         point.dataset.index = i;
-        point.addEventListener('click', handlePointClick);
+        if (!isFilled) point.addEventListener('click', handlePointClick);
         boardDiv.appendChild(point);
     });
 }
 
 function updateBoard(board) {
     document.querySelectorAll('.piece').forEach(p => p.remove());
-    board.forEach((row, y) => {
-        row.forEach((cell, x) => {
-            if (cell) {
-                const piece = document.createElement('div');
-                piece.classList.add('piece', cell);
-                const pos = positions.find(p => p.x === x && p.y === y);
-                if (pos) {
-                    piece.style.left = `${coordMap[pos.x]}px`;
-                    piece.style.top = `${coordMap[pos.y]}px`;
-                    piece.dataset.x = x;
-                    piece.dataset.y = y;
-                    piece.addEventListener('click', handlePieceClick);
-                    boardDiv.appendChild(piece);
-                }
-            }
-        });
+    drawBoard(board);
+    positions.forEach((pos) => {
+        const cell = board[pos.x][pos.y];
+        if (cell) {
+            const piece = document.createElement('div');
+            piece.classList.add('piece', cell);
+            piece.style.left = `${coordMap[pos.x]}px`;
+            piece.style.top = `${coordMap[pos.y]}px`;
+            piece.dataset.x = pos.x;
+            piece.dataset.y = pos.y;
+            piece.addEventListener('click', handlePieceClick);
+            boardDiv.appendChild(piece);
+        }
     });
 }
 
@@ -116,16 +123,17 @@ function handlePointClick(e) {
     const x = parseInt(e.target.dataset.x);
     const y = parseInt(e.target.dataset.y);
     const phase = phaseSpan.textContent;
-
+    if (!positions.some(p => p.x === x && p.y === y)) return;
     if (phase === 'placing') {
-        socket.emit('placePiece', { roomId, position: { x, y } });
+        socket.emit('placePiece', { position: { x, y } });
     } else if (phase === 'moving' || phase === 'flying') {
         if (selectedPiece) {
             const from = {
                 x: parseInt(selectedPiece.dataset.x),
                 y: parseInt(selectedPiece.dataset.y)
             };
-            socket.emit('movePiece', { roomId, from, to: { x, y } });
+            if (!positions.some(p => p.x === from.x && p.y === from.y)) return;
+            socket.emit('movePiece', { from, to: { x, y } });
             selectedPiece.classList.remove('selected');
             selectedPiece = null;
         }
@@ -139,7 +147,7 @@ function handlePieceClick(e) {
     const piece = e.target;
 
     if (phase === 'removing') {
-        socket.emit('removePiece', { roomId, position: { x, y } });
+        socket.emit('removePiece', { position: { x, y } });
     } else if (phase === 'moving' || phase === 'flying') {
         if (selectedPiece) {
             selectedPiece.classList.remove('selected');
@@ -149,89 +157,110 @@ function handlePieceClick(e) {
     }
 }
 
-createRoomBtn.addEventListener('click', () => {
-    const id = roomIdInput.value.trim();
-    if (id) {
-        socket.emit('createRoom', id);
-    }
+function showNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'toast-notification';
+    notification.textContent = message;
+    notificationContainer.appendChild(notification);
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+
+playButton.addEventListener('click', () => {
+    const name = playerNameInput.value.trim();
+    socket.emit('findGame', { name });
+    playButton.disabled = true;
+    playButton.textContent = 'Finding Game...';
 });
 
-joinRoomBtn.addEventListener('click', () => {
-    const id = roomIdInput.value.trim();
-    if (id) {
-        socket.emit('joinRoom', id);
-    }
-});
-
-socket.on('roomCreated', (id) => {
-    roomId = id;
-    player = 'player1';
+socket.on('waitingForOpponent', () => {
     roomSelection.classList.add('hidden');
     gameContainer.classList.remove('hidden');
-    displayRoomId.textContent = id;
-    playerIdSpan.textContent = '1';
-    drawBoard();
+    waitingMessage.classList.remove('hidden');
+    drawBoard(Array(7).fill(null).map(() => Array(7).fill(null)));
 });
 
-socket.on('playerJoined', (data) => {
-    // This is received by player1
-    console.log('Player 2 joined');
-});
-
-socket.on('startGame', (data) => {
-    // This is received by both players
-    roomId = roomIdInput.value.trim();
-    if (!player) {
-        player = 'player2';
-        playerIdSpan.textContent = '2';
+function updatePlayerNames(players) {
+    playerNamesDiv.innerHTML = '';
+    for (const id in players) {
+        const p = players[id];
+        const playerEl = document.createElement('div');
+        playerEl.textContent = p.name;
+        playerEl.className = `badge badge-${p.player}`;
+        playerNamesDiv.appendChild(playerEl);
     }
+}
+
+socket.on('gameUpdate', (data) => {
+    waitingMessage.classList.add('hidden');
     
+    if (!player) {
+        player = data.yourPlayerId;
+        const myPlayerInfo = Object.values(data.players).find(p => p.id === socket.id);
+        if (myPlayerInfo) {
+            playerBadge.textContent = myPlayerInfo.name;
+        } else {
+            playerBadge.textContent = player; // Fallback
+        }
+        playerBadge.className = `badge badge-${player}`;
+    }
+
     roomSelection.classList.add('hidden');
     gameContainer.classList.remove('hidden');
-    displayRoomId.textContent = roomId;
 
+    updatePlayerNames(data.players);
     updateBoard(data.board);
     turnSpan.textContent = data.turn;
     phaseSpan.textContent = data.phase || 'placing';
-    piecesToPlaceSpan.textContent = data.players[socket.id]?.piecesToPlace || 9;
-    drawBoard();
-    updateBoard(data.board);
-});
+    
+    const myPlayerInfo = Object.values(data.players).find(p => p.id === socket.id);
+    if(myPlayerInfo) {
+        piecesToPlaceSpan.textContent = myPlayerInfo.piecesToPlace;
+    }
 
-
-socket.on('updateBoard', (board) => {
-    updateBoard(board);
-});
-
-socket.on('updateTurn', (data) => {
-    turnSpan.textContent = data.turn;
-    phaseSpan.textContent = data.phase;
-    const myPlayerData = Object.values(data.players || {}).find(p => p.id === socket.id);
-    if(myPlayerData) {
-        piecesToPlaceSpan.textContent = myPlayerData.piecesToPlace;
+    if (data.sound === 'turnChange') {
+        if (turnSwitchSound) turnSwitchSound.play();
     }
 });
 
-socket.on('millFormed', (data) => {
-    phaseSpan.textContent = 'removing';
-    alert(`Player ${data.player} formed a mill! Remove an opponent's piece.`);
+socket.on('mill', (data) => {
+    showNotification(`${data.player} formed a mill! Remove an opponent's piece.`);
+    if (phaseSpan.textContent !== 'removing') {
+        phaseSpan.textContent = 'removing';
+    }
+    if (millSound) millSound.play();
 });
 
+socket.on('updatePhase', (phase) => {
+    phaseSpan.textContent = phase;
+});
 
 socket.on('gameOver', (data) => {
-    alert(`Game Over! Winner is ${data.winner}`);
-    roomSelection.classList.remove('hidden');
-    gameContainer.classList.add('hidden');
+    showNotification(`Game Over! ${data.winnerName} wins!`);
+    phaseSpan.textContent = 'Game Over';
+    turnSpan.textContent = '-';
 });
 
-socket.on('error', (message) => {
-    alert(message);
+socket.on('playerDisconnect', () => {
+    showNotification('Your opponent has disconnected. Game over.');
+    phaseSpan.textContent = 'Opponent Disconnected';
+    turnSpan.textContent = '-';
+    // Optionally reset the game view
+    setTimeout(() => {
+        gameContainer.classList.add('hidden');
+        roomSelection.classList.remove('hidden');
+        playButton.disabled = false;
+        playButton.textContent = 'Play Game';
+        player = null;
+    }, 5000);
 });
 
-socket.on('playerLeft', () => {
-    alert('The other player has left the game.');
-    roomSelection.classList.remove('hidden');
-    gameContainer.classList.add('hidden');
+socket.on('gameFull', () => {
+    showNotification('Sorry, the game is currently full. Please try again later.');
+    playButton.disabled = false;
+    playButton.textContent = 'Play Game';
 });
 
-drawBoard(); 
+// Initial board drawing
+drawBoard(Array(7).fill(null).map(() => Array(7).fill(null))); 
