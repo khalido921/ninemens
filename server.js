@@ -105,14 +105,12 @@ io.on('connection', (socket) => {
             
             if (wasMill) {
                 game.phase = 'removing';
-                io.emit('mill', { player: player.name });
+                broadcastGameUpdate({ sound: 'mill' });
             } else {
                 game.turn = player.player === 'player1' ? 'player2' : 'player1';
-                if (Object.values(game.players).every(p => p.piecesToPlace === 0)) {
-                    game.phase = 'moving';
-                }
+                setPhaseForCurrentTurn();
+                broadcastGameUpdate({ sound: 'turnChange' });
             }
-            broadcastGameUpdate({ sound: wasMill ? 'mill' : 'turnChange' });
         }
     });
 
@@ -134,12 +132,12 @@ io.on('connection', (socket) => {
 
             if (wasMill) {
                 game.phase = 'removing';
-                io.emit('mill', { player: player.name });
+                broadcastGameUpdate({ sound: 'mill' });
             } else {
                 game.turn = player.player === 'player1' ? 'player2' : 'player1';
+                setPhaseForCurrentTurn();
+                broadcastGameUpdate({ sound: 'turnChange' });
             }
-            updatePhaseForPlayers();
-            broadcastGameUpdate({ sound: wasMill ? 'mill' : 'turnChange' });
         }
     });
 
@@ -173,7 +171,7 @@ io.on('connection', (socket) => {
         
         if (checkForWinByNoMoves()) return;
 
-        updatePhaseForPlayers();
+        setPhaseForCurrentTurn();
         broadcastGameUpdate({ sound: 'turnChange' });
     });
     
@@ -218,22 +216,23 @@ function broadcastGameUpdate(options = {}) {
     });
 }
 
-function updatePhaseForPlayers() {
-    const p1 = getPlayerByRole('player1');
-    const p2 = getPlayerByRole('player2');
+function setPhaseForCurrentTurn() {
+    const currentPlayer = getPlayerByRole(game.turn);
+    if (!currentPlayer) {
+        game.phase = 'waiting';
+        return;
+    }
 
-    if (!p1 || !p2) return;
+    const allPiecesPlaced = Object.values(game.players).every(p => p.piecesToPlace === 0);
 
-    if (p1.piecesToPlace === 0 && p2.piecesToPlace === 0) {
-        if (p1.piecesOnBoard === 3) p1.phase = 'flying'; else p1.phase = 'moving';
-        if (p2.piecesOnBoard === 3) p2.phase = 'flying'; else p2.phase = 'moving';
-        
-        const currentPlayer = getPlayerByRole(game.turn);
-        if (currentPlayer) {
-            game.phase = currentPlayer.phase || 'moving';
-        }
-    } else {
+    if (!allPiecesPlaced) {
         game.phase = 'placing';
+    } else {
+        if (currentPlayer.piecesOnBoard === 3) {
+            game.phase = 'flying';
+        } else {
+            game.phase = 'moving';
+        }
     }
 }
 
@@ -295,6 +294,11 @@ function getAdjacentPositions(position) {
 }
 
 function hasValidMoves(board, player, playerPiecesOnBoard) {
+    if (playerPiecesOnBoard === 3) {
+        // Flying phase: can move anywhere if there's an empty spot.
+        return validPositions.some(p => board[p.x][p.y] === null);
+    }
+
     const playerRole = player;
     const pieces = [];
     for (let i = 0; i < validPositions.length; i++) {
@@ -338,13 +342,18 @@ function isValidPosition(pos) {
 function isValidMove(from, to, board, player, piecesOnBoard) {
     if (board[to.x][to.y] !== null) return false;
 
-    if (piecesOnBoard < 4) { // Flying phase (not 3, because this is before the move)
+    if (piecesOnBoard === 3) { // Flying phase
         return true;
     }
     
     // Moving phase
-    const adjacent = getAdjacentPositions(from);
-    return adjacent.some(p => p.x === to.x && p.y === to.y);
+    const fromIndex = validPositions.findIndex(p => p.x === from.x && p.y === from.y);
+    const toIndex = validPositions.findIndex(p => p.x === to.x && p.y === to.y);
+
+    if (fromIndex === -1 || toIndex === -1) return false;
+
+    const adjacentIndices = adjacencies[fromIndex];
+    return adjacentIndices.includes(toIndex);
 }
 
 const PORT = process.env.PORT || 3000;
