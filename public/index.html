@@ -14,20 +14,32 @@
             <input type="text" id="player-name" placeholder="Enter Your Name">
             <button id="play-button">Play Game</button>
         </div>
-        <div id="game-container" class="hidden">
-            <div id="board-container">
-                <div id="waiting-message" class="hidden">
-                    <h2>Waiting for opponent...</h2>
-                </div>
-                <div id="board"></div>
+
+        <div id="app-container" class="hidden">
+            <div id="chat-container">
+                <h2>Chat</h2>
+                <div id="chat-messages"></div>
+                <form id="chat-form">
+                    <input id="chat-input" placeholder="Type a message..." autocomplete="off" />
+                    <button type="submit">Send</button>
+                </form>
             </div>
-            <div id="sidebar">
-                <h2>Game Info</h2>
-                <div id="player-names"></div>
-                <div><span class="info-label">You are:</span> <span class="badge" id="player-badge"></span></div>
-                <div><span class="info-label">Turn:</span> <span class="badge badge-turn" id="turn"></span></div>
-                <div><span class="info-label">Phase:</span> <span class="badge badge-phase" id="phase"></span></div>
-                <div><span class="info-label">Pieces to place:</span> <span class="info-value" id="pieces-to-place"></span></div>
+
+            <div id="game-container">
+                <div id="board-container">
+                    <div id="waiting-message" class="hidden">
+                        <h2>Waiting for opponent...</h2>
+                    </div>
+                    <div id="board"></div>
+                </div>
+                <div id="sidebar">
+                    <h2>Game Info</h2>
+                    <div id="player-names"></div>
+                    <div><span class="info-label">You are:</span> <span class="badge" id="player-badge"></span></div>
+                    <div><span class="info-label">Turn:</span> <span class="badge badge-turn" id="turn"></span></div>
+                    <div><span class="info-label">Phase:</span> <span class="badge badge-phase" id="phase"></span></div>
+                    <div><span class="info-label">Pieces to place:</span> <span class="info-value" id="pieces-to-place"></span></div>
+                </div>
             </div>
         </div>
     </main>

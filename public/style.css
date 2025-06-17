@@ -54,25 +54,109 @@ h1 {
     background: #4338ca;
 }
 
-#game-container {
-    position: relative;
+#app-container {
+    display: flex;
+    gap: 36px;
+    align-items: flex-start;
     margin-top: 16px;
 }
 
-#sidebar {
-    position: absolute;
-    left: 100%;
-    top: 0;
-    margin-left: 36px;
-    width: 220px;
+#chat-container, #sidebar {
+    width: 240px;
     background: #fff;
     border-radius: 16px;
     box-shadow: 0 4px 24px rgba(0,0,0,0.10);
-    padding: 28px 24px 24px 24px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 18px;
     font-size: 1.08rem;
+    align-self: stretch; /* Make them same height */
+}
+
+#chat-container h2, #sidebar h2 {
+    font-size: 1.2rem;
+    margin: 0;
+    margin-bottom: 10px;
+    color: #6366f1;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+#chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 10px;
+    background: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#chat-messages .message {
+    padding: 6px 10px;
+    border-radius: 8px;
+    max-width: 90%;
+    word-wrap: break-word;
+}
+
+#chat-messages .message .sender {
+    font-weight: bold;
+    font-size: 0.9em;
+    color: #6366f1;
+    margin-bottom: 2px;
+}
+
+#chat-messages .my-message {
+    background-color: #e0e7ff;
+    align-self: flex-end;
+}
+
+#chat-messages .other-message {
+    background-color: #f0f0f0;
+    align-self: flex-start;
+}
+
+
+#chat-form {
+    display: flex;
+    gap: 8px;
+}
+
+#chat-form input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid #bbb;
+    font-size: 1rem;
+}
+
+#chat-form button {
+    padding: 8px 18px;
+    border-radius: 6px;
+    border: none;
+    background: #6366f1;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+#chat-form button:hover {
+    background: #4338ca;
+}
+
+
+#game-container {
+    display: flex;
+    gap: 36px;
+}
+
+#sidebar {
+    position: static;
+    margin-left: 0;
 }
 
 #sidebar h2 {

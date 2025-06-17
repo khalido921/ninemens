@@ -72,19 +72,11 @@ io.on('connection', (socket) => {
             game.turn = 'player1';
             game.phase = 'placing';
             
-            Object.values(game.players).forEach(p => {
-                 io.to(p.id).emit('gameUpdate', {
-                    board: game.board,
-                    turn: game.players[Object.keys(game.players)[0]].name,
-                    phase: game.phase,
-                    players: game.players,
-                    yourPlayerId: p.player
-                });
-            });
-
             const p1Name = getPlayerByRole('player1')?.name;
             const p2Name = getPlayerByRole('player2')?.name;
             console.log(`${p1Name} vs ${p2Name}. Game starting.`);
+
+            broadcastGameUpdate();
         }
     });
 
@@ -129,15 +121,17 @@ io.on('connection', (socket) => {
             if (checkForWinByNoMoves()) return;
 
             const wasMill = isMill(to, game.board, player.player);
+            let sound = 'turnChange';
 
             if (wasMill) {
                 game.phase = 'removing';
-                broadcastGameUpdate({ sound: 'mill' });
+                sound = 'mill';
             } else {
                 game.turn = player.player === 'player1' ? 'player2' : 'player1';
                 setPhaseForCurrentTurn();
-                broadcastGameUpdate({ sound: 'turnChange' });
             }
+            
+            broadcastGameUpdate({ sound });
         }
     });
 
@@ -175,17 +169,25 @@ io.on('connection', (socket) => {
         broadcastGameUpdate({ sound: 'turnChange' });
     });
     
+    socket.on('sendMessage', (message) => {
+        if (!game.players[socket.id]) return;
+
+        const player = game.players[socket.id];
+        io.emit('newMessage', {
+            senderId: socket.id,
+            senderName: player.name,
+            text: message
+        });
+    });
+
     socket.on('disconnect', () => {
         console.log(`Disconnected: ${socket.id}`);
         if (game.players[socket.id]) {
             delete game.players[socket.id];
             
-            if (Object.keys(game.players).length < 2) {
-                const remainingPlayerSocketId = Object.keys(game.players)[0];
-                if (remainingPlayerSocketId) {
-                    io.to(remainingPlayerSocketId).emit('playerDisconnect');
-                }
+            if (Object.keys(game.players).length < 2 && game.phase !== 'waiting') {
                 game = createInitialGameState();
+                io.emit('playerDisconnect');
                 console.log('Game reset due to player disconnect.');
             }
         }

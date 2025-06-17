@@ -2,6 +2,7 @@ const socket = io();
 
 const playButton = document.getElementById('play-button');
 const roomSelection = document.getElementById('room-selection');
+const appContainer = document.getElementById('app-container');
 const gameContainer = document.getElementById('game-container');
 const turnSpan = document.getElementById('turn');
 const displayRoomId = document.getElementById('display-room-id');
@@ -18,6 +19,10 @@ const moveSound = document.getElementById('move-sound');
 const removeSound = document.getElementById('remove-sound');
 const millSound = document.getElementById('mill-sound');
 const turnSwitchSound = document.getElementById('turn-switch-sound');
+
+const chatForm = document.getElementById('chat-form');
+const chatInput = document.getElementById('chat-input');
+const chatMessages = document.getElementById('chat-messages');
 
 let player = null;
 let selectedPiece = null;
@@ -174,9 +179,42 @@ playButton.addEventListener('click', () => {
     playButton.textContent = 'Finding Game...';
 });
 
+chatForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (chatInput.value) {
+        socket.emit('sendMessage', chatInput.value);
+        chatInput.value = '';
+    }
+});
+
+socket.on('newMessage', (data) => {
+    const { senderId, senderName, text } = data;
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message');
+    
+    const senderElement = document.createElement('div');
+    senderElement.classList.add('sender');
+    senderElement.textContent = senderName;
+    
+    const textElement = document.createElement('div');
+    textElement.textContent = text;
+    
+    messageElement.appendChild(senderElement);
+    messageElement.appendChild(textElement);
+
+    if (senderId === socket.id) {
+        messageElement.classList.add('my-message');
+    } else {
+        messageElement.classList.add('other-message');
+    }
+    
+    chatMessages.appendChild(messageElement);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+});
+
 socket.on('waitingForOpponent', () => {
     roomSelection.classList.add('hidden');
-    gameContainer.classList.remove('hidden');
+    appContainer.classList.remove('hidden');
     waitingMessage.classList.remove('hidden');
     drawBoard(Array(7).fill(null).map(() => Array(7).fill(null)));
 });
@@ -207,6 +245,7 @@ socket.on('gameUpdate', (data) => {
     }
 
     roomSelection.classList.add('hidden');
+    appContainer.classList.remove('hidden');
     gameContainer.classList.remove('hidden');
 
     updatePlayerNames(data.players);
@@ -221,15 +260,12 @@ socket.on('gameUpdate', (data) => {
 
     if (data.sound === 'turnChange') {
         if (turnSwitchSound) turnSwitchSound.play();
+    } else if (data.sound === 'mill') {
+        const turnPlayer = Object.values(data.players).find(p => p.player === data.turn);
+        const millPlayerName = turnPlayer ? turnPlayer.name : 'A player';
+        showNotification(`${millPlayerName} formed a mill! Remove an opponent's piece.`);
+        if (millSound) millSound.play();
     }
-});
-
-socket.on('mill', (data) => {
-    showNotification(`${data.player} formed a mill! Remove an opponent's piece.`);
-    if (phaseSpan.textContent !== 'removing') {
-        phaseSpan.textContent = 'removing';
-    }
-    if (millSound) millSound.play();
 });
 
 socket.on('updatePhase', (phase) => {
@@ -248,6 +284,7 @@ socket.on('playerDisconnect', () => {
     turnSpan.textContent = '-';
     // Optionally reset the game view
     setTimeout(() => {
+        appContainer.classList.add('hidden');
         gameContainer.classList.add('hidden');
         roomSelection.classList.remove('hidden');
         playButton.disabled = false;
