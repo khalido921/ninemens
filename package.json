@@ -4,8 +4,11 @@
   "description": "A multiplayer Nine Men's Morris game",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "keywords": [],
+  "author": "",
   "dependencies": {
     "express": "^4.17.1",
     "socket.io": "^4.0.0"
