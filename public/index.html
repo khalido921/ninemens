@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nine Men's Morris</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Nine Men's Morris</h1>
+    <div id="room-selection">
+        <input type="text" id="room-id" placeholder="Enter Room ID">
+        <button id="create-room">Create Room</button>
+        <button id="join-room">Join Room</button>
+    </div>
+    <div id="game-container" class="hidden">
+        <div id="game-info">
+            <p>Room ID: <span id="display-room-id"></span></p>
+            <p>Your are Player: <span id="player-id"></span></p>
+            <p>Turn: <span id="turn"></span></p>
+            <p>Phase: <span id="phase"></span></p>
+            <p>Pieces to place: <span id="pieces-to-place"></span></p>
+        </div>
+        <div id="board"></div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 
