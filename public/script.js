@@ -265,24 +265,22 @@ socket.on('gameUpdate', (data) => {
     appContainer.classList.remove('hidden');
     gameContainer.classList.remove('hidden');
 
-    updatePlayerNames(data.players);
-    updateBoard(data.board);
-    turnSpan.textContent = data.turn;
-    phaseSpan.textContent = data.phase || 'placing';
+    const { board, turn, phase, players, sound } = data;
+
+    updatePlayerNames(players);
+
+    if (sound === 'mill') millSound.play();
+    if (sound === 'turnChange') turnSwitchSound.play();
     
-    const myPlayerInfo = Object.values(data.players).find(p => p.id === socket.id);
-    if(myPlayerInfo) {
+    turnSpan.textContent = turn;
+    phaseSpan.textContent = phase;
+
+    const myPlayerInfo = Object.values(players).find(p => p.id === socket.id);
+    if (myPlayerInfo) {
         piecesToPlaceSpan.textContent = myPlayerInfo.piecesToPlace;
     }
-
-    if (data.sound === 'turnChange') {
-        if (turnSwitchSound) turnSwitchSound.play();
-    } else if (data.sound === 'mill') {
-        const turnPlayer = Object.values(data.players).find(p => p.player === data.turn);
-        const millPlayerName = turnPlayer ? turnPlayer.name : 'A player';
-        showNotification(`${millPlayerName} formed a mill! Remove an opponent's piece.`);
-        if (millSound) millSound.play();
-    }
+    
+    updateBoard(board);
 });
 
 socket.on('updatePhase', (phase) => {

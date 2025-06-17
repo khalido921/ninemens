@@ -76,7 +76,17 @@ io.on('connection', (socket) => {
             const p2Name = getPlayerByRole('player2')?.name;
             console.log(`${p1Name} vs ${p2Name}. Game starting.`);
 
-            broadcastGameUpdate();
+            const turnPlayer = getPlayerByRole(game.turn);
+            Object.values(game.players).forEach(p => {
+                io.to(p.id).emit('gameUpdate', {
+                    board: game.board,
+                    turn: turnPlayer ? turnPlayer.name : '',
+                    phase: game.phase,
+                    players: game.players,
+                    yourPlayerId: p.player,
+                    sound: null
+                });
+            });
         }
     });
 
